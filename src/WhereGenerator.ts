@@ -19,7 +19,28 @@ type LeftRightComparison = BeginsWithNode | ContainsNode | EqNode | GtNode | Geq
 
 const valueGenerator = <T extends Record<string, any>>(node: FieldRefNode | ValueNode): ((item: T) => any) => {
     if (node.nodeType === 'FieldRef') {
-        return (item: T) => item[node.Name];
+        return (item: T) => {
+            const fieldValue = item[node.Name];
+            if (typeof fieldValue !== 'object') {
+                return fieldValue;
+            } else if (Array.isArray(fieldValue)) {
+                if (fieldValue.length === 0) {
+                    return fieldValue;
+                } else if (typeof fieldValue[0] !== 'object') {
+                    return fieldValue;
+                } else if (node.LookupId === true) {
+                    return fieldValue.map((f) => f.id);
+                } else {
+                    return fieldValue.map((f) => f.value);
+                }
+            } else {
+                if (node.LookupId === true) {
+                    return fieldValue.id;
+                } else {
+                    return fieldValue.value;
+                }
+            }
+        };
     } else {
         return (item: T) => node.value;
     }
@@ -45,9 +66,9 @@ const leftRightGenerator = <T extends Record<string, any>>({
         return (item: T) => {
             const l = leftValue(item);
             if (typeof l !== 'string') {
-                throw new Error(`BeginsWith: Value (${l}) is not a string`);
+                throw new Error(`Contains: Value (${l}) is not a string`);
             }
-            return l.indexOf(rightValue(item)) > 0;
+            return l.indexOf(rightValue(item)) >= 0;
         };
     } else if (nodeType === 'Eq') {
         return (item: T) => leftValue(item) == rightValue(item);

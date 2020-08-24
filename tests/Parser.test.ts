@@ -117,4 +117,39 @@ describe('Basic queries', () => {
             },
         });
     });
+
+    test('Properly parses boolean attributes', () => {
+        expect(
+            parseCamlQuery(
+                `<View>
+                        <Query>
+                            <Where>
+                                <Eq><FieldRef Name="user" LookupId='TRUE' /><Value Type="Lookup">3</Value></Eq>
+                            </Where>
+                        </Query>
+                    </View>`
+            )
+        ).toEqual({
+            nodeType: 'View',
+            query: {
+                nodeType: 'Query',
+                where: {
+                    body: {
+                        left: {
+                            nodeType: 'FieldRef',
+                            LookupId: true,
+                            Name: 'user',
+                        },
+                        nodeType: 'Eq',
+                        right: {
+                            nodeType: 'Value',
+                            Type: 'Lookup',
+                            value: '3',
+                        },
+                    },
+                    nodeType: 'Where',
+                },
+            },
+        });
+    });
 });

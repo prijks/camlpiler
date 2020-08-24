@@ -2,9 +2,6 @@ import { ViewNode, QueryNode, WhereNode, LogicNode, ComparisonNode, FieldRefNode
 
 const ensureChildCount = (node: Element, count: number): void => {
     if (node.children.length !== count) {
-        for (let i = 0; i < node.children.length; i++) {
-            console.log(`ERR ${i} - ${node.children[i].nodeName}`);
-        }
         throw new Error(`A ${node.nodeName} element must have exactly ${count} child element${count > 1 ? 's' : ''}`);
     }
 };
@@ -39,8 +36,14 @@ const parseLogicalNode = (node: Element): LogicNode => {
 const parseFieldRef = (node: Element): FieldRefNode => {
     ensureNodeName(node, ['FieldRef']);
     const Name = getNodeAttribute(node, 'Name');
+    const result: FieldRefNode = { nodeType: 'FieldRef', Name };
 
-    return { nodeType: 'FieldRef', Name };
+    const attr = node.attributes.getNamedItem('LookupId');
+    if (attr) {
+        result.LookupId = attr.value === 'TRUE';
+    }
+
+    return result;
 };
 
 const parseValue = (node: Element): ValueNode => {
