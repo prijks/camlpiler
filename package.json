@@ -1,0 +1,64 @@
+{
+    "name": "camlpiler",
+    "version": "1.0.0",
+    "description": "A simple library for converting CamlQuery XML syntax into a JS/TS filter function",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "test": "jest"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/prijks/camlpiler.git"
+    },
+    "keywords": [
+        "SharePoint",
+        "CamlQuery",
+        "Testing"
+    ],
+    "author": "Pete Rijks",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/prijks/camlpiler/issues"
+    },
+    "homepage": "https://www.esgeroth.org/software/camlpiler",
+    "files": [
+        "/dist"
+    ],
+    "devDependencies": {
+        "@babel/core": "^7.11.4",
+        "@babel/preset-env": "^7.11.0",
+        "@babel/preset-typescript": "^7.10.4",
+        "@types/jest": "^26.0.10",
+        "@typescript-eslint/eslint-plugin": "^3.9.1",
+        "@typescript-eslint/parser": "^3.9.1",
+        "babel-jest": "^26.3.0",
+        "eslint": "^7.7.0",
+        "eslint-config-prettier": "^6.11.0",
+        "eslint-plugin-prettier": "^3.1.4",
+        "jest": "^26.4.2",
+        "jest-environment-jsdom-fourteen": "^1.0.1",
+        "prettier": "^2.0.5",
+        "ts-jest": "^26.2.0",
+        "typescript": "^4.0.2"
+    },
+    "eslinstConfig": {
+        "parser": "@typescript-eslint/parser",
+        "plugins": [
+            "@typescript-eslint",
+            "prettier"
+        ],
+        "extends": [
+            "eslint:recommended",
+            "plugin:@typescript-eslint/eslint-recommended",
+            "plugin:@typescript-eslint/recommended",
+            "prettier/@typescript-eslint",
+            "prettier"
+        ]
+    },
+    "prettier": {
+        "tabWidth": 4,
+        "singleQuote": true,
+        "printWidth": 120
+    }
+}

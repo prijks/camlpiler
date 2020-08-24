@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "ES5",
+        "module": "commonjs",
+        "lib": ["DOM", "ESNext"],
+        "declaration": true,
+        "outDir": "./dist",
+        "strict": true,
+        "esModuleInterop": true
+    },
+    "include": ["src/**/*", "tests/Parser.test.ts"],
+    "exclude": ["node_modules", "**/*.test.ts"]
+}
