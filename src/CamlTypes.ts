@@ -234,7 +234,26 @@ export interface QueryNode {
     orderBy?: OrderByNode;
 }
 
+export interface FilterNode {
+    nodeType: 'Filter';
+    Name: string;
+    Value: string;
+}
+
+export interface MethodNode {
+    nodeType: 'Method';
+    Name: string;
+    filters: FilterNode[];
+}
+
+export interface ViewFieldsNode {
+    nodeType: 'ViewFields';
+    fieldRefs: FieldRefNode[];
+}
+
 export interface ViewNode {
     nodeType: 'View';
-    query: QueryNode;
+    query?: QueryNode;
+    method?: MethodNode;
+    viewFields?: ViewFieldsNode;
 }

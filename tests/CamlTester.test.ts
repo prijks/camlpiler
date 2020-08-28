@@ -15,6 +15,11 @@ describe('Error Handling', () => {
         const tester = new CamlTester({});
         expect(() => tester.testQueryXml([], '<View><Query></View>')).toThrow();
     });
+
+    test('Throws on missing method definition', () => {
+        const tester = new CamlTester({});
+        expect(() => tester.testQueryXml([], '<View><Method name="method" /></View>')).toThrow();
+    });
 });
 
 describe('Basic queries', () => {
@@ -38,6 +43,16 @@ describe('Basic queries', () => {
                 '<View><Query><Where><Eq><FieldRef Name="a" /><Value Type="Text">abc</Value></Eq></Where></Query></View>'
             )
         ).toEqual(testItems.filter((i) => i.a === 'abc'));
+    });
+
+    test('String filters are case insensitive', () => {
+        const tester = new CamlTester({});
+        expect(
+            tester.testQueryXml(
+                testItems,
+                '<View><Query><Where><BeginsWith><FieldRef Name="a" /><Value Type="Text">AB</Value></BeginsWith></Where></Query></View>'
+            )
+        ).toEqual(testItems.filter((i) => i.a.toLowerCase().indexOf('ab') === 0));
     });
 
     test('Query with nested and/or returns appropriate items', () => {
@@ -92,5 +107,46 @@ describe('Basic queries', () => {
                 </View>`
             )
         ).toEqual(testItems.filter((i) => i.user.value.indexOf('Doe') >= 0));
+    });
+});
+
+describe('External list queries', () => {
+    interface ExternalItemType extends Record<string, any> {
+        id: number;
+        a: string;
+        b: string;
+    }
+
+    const testItems: Array<ExternalItemType> = [
+        { id: 1, a: 'abc', b: 'def' },
+        { id: 2, a: 'a;sdfj', b: 'def' },
+        { id: 3, a: 'abc', b: 'xyz' },
+        { id: 4, a: '1234', b: 'zxcv' },
+    ];
+
+    test('Query with method with single filter', () => {
+        const tester = new CamlTester<ExternalItemType>({
+            listDefinition: {
+                external: true,
+                name: 'test',
+                methods: [
+                    {
+                        name: 'Read List',
+                        method: (items: ExternalItemType[], filters: Array<{ name: string; value: string }>) => {
+                            for (const filter of filters) {
+                                items = items.filter((item) => item[filter.name] === filter.value);
+                            }
+                            return items;
+                        },
+                    },
+                ],
+            },
+        });
+        expect(
+            tester.testQueryXml(
+                testItems,
+                '<View><Method Name="Read List" ><Filter Name="a" Value="abc" /></Method></View>'
+            )
+        ).toEqual(testItems.filter((i) => i.a === 'abc'));
     });
 });

@@ -18,8 +18,10 @@ export type Where<T extends Record<string, any>> = (item: T) => boolean;
 type LeftRightComparison = BeginsWithNode | ContainsNode | EqNode | GtNode | GeqNode | LtNode | LeqNode | NeqNode;
 
 const valueGenerator = <T extends Record<string, any>>(node: FieldRefNode | ValueNode): ((item: T) => any) => {
+    let baseItemGenerator: (item: T) => any;
+
     if (node.nodeType === 'FieldRef') {
-        return (item: T) => {
+        baseItemGenerator = (item: T) => {
             const fieldValue = item[node.Name];
             if (typeof fieldValue !== 'object') {
                 return fieldValue;
@@ -42,8 +44,13 @@ const valueGenerator = <T extends Record<string, any>>(node: FieldRefNode | Valu
             }
         };
     } else {
-        return (item: T) => node.value;
+        baseItemGenerator = (item: T) => node.value;
     }
+
+    return (item: T): any => {
+        const v = baseItemGenerator(item);
+        return typeof v === 'string' ? v.toLowerCase() : v;
+    };
 };
 
 const leftRightGenerator = <T extends Record<string, any>>({

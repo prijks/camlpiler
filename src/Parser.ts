@@ -1,8 +1,25 @@
-import { ViewNode, QueryNode, WhereNode, LogicNode, ComparisonNode, FieldRefNode, ValueNode } from './CamlTypes';
+import {
+    ViewNode,
+    QueryNode,
+    WhereNode,
+    LogicNode,
+    ComparisonNode,
+    FieldRefNode,
+    ValueNode,
+    MethodNode,
+    FilterNode,
+    ViewFieldsNode,
+} from './CamlTypes';
 
-const ensureChildCount = (node: Element, count: number): void => {
+const ensureExactChildCount = (node: Element, count: number): void => {
     if (node.children.length !== count) {
         throw new Error(`A ${node.nodeName} element must have exactly ${count} child element${count > 1 ? 's' : ''}`);
+    }
+};
+
+const ensureMinimumChildCount = (node: Element, count: number): void => {
+    if (node.children.length < count) {
+        throw new Error(`A ${node.nodeName} element must have at least ${count} child element${count > 1 ? 's' : ''}`);
     }
 };
 
@@ -24,7 +41,7 @@ const getNodeAttribute = (node: Element, attribute: string): string => {
 
 const parseLogicalNode = (node: Element): LogicNode => {
     ensureNodeName(node, ['And', 'Or']);
-    ensureChildCount(node, 2);
+    ensureExactChildCount(node, 2);
 
     return {
         nodeType: node.nodeName as 'And' | 'Or',
@@ -71,14 +88,14 @@ const leftRightOperators = ['BeginsWith', 'Contains', 'Eq', 'Geq', 'Gt', 'Leq', 
 
 const parseComparisonNode = (node: Element): ComparisonNode => {
     if (leftRightOperators.indexOf(node.nodeName) >= 0) {
-        ensureChildCount(node, 2);
+        ensureExactChildCount(node, 2);
         return {
             nodeType: node.nodeName,
             left: parseOperand(node.children[0]),
             right: parseOperand(node.children[1]),
         } as ComparisonNode;
     } else if (node.nodeName === 'IsNull' || node.nodeName === 'IsNotNull') {
-        ensureChildCount(node, 1);
+        ensureExactChildCount(node, 1);
         return { nodeType: node.nodeName, value: parseOperand(node.children[0]) } as ComparisonNode;
     } else {
         throw new Error(`Unexpected element ${node.nodeName}`);
@@ -94,7 +111,7 @@ const parseBody = (node: Element): LogicNode | ComparisonNode => {
 };
 
 const parseWhere = (node: Element): WhereNode => {
-    ensureChildCount(node, 1);
+    ensureExactChildCount(node, 1);
     ensureNodeName(node, ['Where']);
 
     return {
@@ -120,6 +137,88 @@ const parseQuery = (node: Element): QueryNode => {
     return result;
 };
 
+const parseFilter = (node: Element): FilterNode => {
+    ensureExactChildCount(node, 0);
+    ensureNodeName(node, ['Filter']);
+    const name = getNodeAttribute(node, 'Name');
+    const value = getNodeAttribute(node, 'Value');
+
+    return {
+        nodeType: 'Filter',
+        Name: name,
+        Value: value,
+    };
+};
+
+const parseMethod = (node: Element): MethodNode => {
+    ensureNodeName(node, ['Method']);
+    const name = getNodeAttribute(node, 'Name');
+    const result = {
+        nodeType: 'Method',
+        Name: name,
+    } as MethodNode;
+
+    for (let i = 0; i < node.children.length; i++) {
+        const child = node.children[i];
+        ensureNodeName(child, ['Filter']);
+        if (result.filters === undefined) {
+            result.filters = [];
+        }
+        result.filters.push(parseFilter(child));
+    }
+
+    return result;
+};
+
+const parseViewFields = (node: Element): ViewFieldsNode => {
+    ensureMinimumChildCount(node, 1);
+    ensureNodeName(node, ['ViewFields']);
+    const result = {
+        nodeType: 'ViewFields',
+        fieldRefs: [],
+    } as ViewFieldsNode;
+
+    for (let i = 0; i < node.children.length; i++) {
+        const child = node.children[i];
+        ensureNodeName(child, ['FieldRef']);
+        result.fieldRefs.push(parseFieldRef(child));
+    }
+
+    return result;
+};
+
+const parseView = (node: Element): ViewNode => {
+    ensureNodeName(node, ['View']);
+    ensureMinimumChildCount(node, 1);
+    const result: ViewNode = { nodeType: 'View' as const };
+    for (let i = 0; i < node.children.length; i++) {
+        const child = node.children[i];
+        ensureNodeName(child, ['Query', 'Method', 'ViewFields']);
+        if (child.nodeName === 'Query') {
+            if (result.query) {
+                throw new Error('A View element can contain at most one Query element');
+            }
+            result.query = parseQuery(child);
+        } else if (child.nodeName === 'Method') {
+            if (result.method) {
+                throw new Error('A View element can contain at most one Method element');
+            }
+            result.method = parseMethod(child);
+        } else if (child.nodeName === 'ViewFields') {
+            if (result.viewFields) {
+                throw new Error('A View element can contain at most one ViewFields element');
+            }
+            result.viewFields = parseViewFields(child);
+        }
+    }
+    return result;
+};
+
+// if (firstChild.children.length === 0 || firstChild.children[0] === null) {
+//     throw new Error(`Failed to parse XML query - View element must contain a Query element.`);
+// }
+// return { nodeType: 'View', query: parseQuery(firstChild.children[0]) };
+
 export const parseCamlQuery = (query: string): ViewNode | QueryNode => {
     const domParser = new window.DOMParser();
     const doc = domParser.parseFromString(query, 'text/xml');
@@ -130,10 +229,7 @@ export const parseCamlQuery = (query: string): ViewNode | QueryNode => {
 
     const firstChild = doc.children[0];
     if (firstChild.nodeName === 'View') {
-        if (firstChild.children.length === 0 || firstChild.children[0] === null) {
-            throw new Error(`Failed to parse XML query - View element must contain a Query element.`);
-        }
-        return { nodeType: 'View', query: parseQuery(firstChild.children[0]) };
+        return parseView(firstChild);
     } else if (firstChild.nodeName === 'Query') {
         return parseQuery(firstChild);
     } else {
