@@ -54,6 +54,6 @@ As a somewhat simplified example, here is a somewhat contrived sample usage in a
             const camlTester = new CamlTester({});
             return camlTester.testQueryXml(testItems, query);
         } else {
-            return promiseBasedSharePointWrapper.search(term);
+            return promiseBasedSharePointWrapper.search(query);
         }
     }
